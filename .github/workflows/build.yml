@@ -1,0 +1,50 @@
+name: Build Container Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - containers.conf
+      - Dockerfile
+      - .github/workflows/build.yml
+  schedule:
+    - cron: '0 3 * * *' # At 03:00 AM (UTC)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Build and push image
+        run: |
+          # Ubuntu LTS versions only; add new LTS releases here
+          TAGS="26.04"
+          
+          # Iterate over tags and build/push
+          for tag in $(echo -e "${TAGS//,/\\n}" | uniq); do
+              echo "Building mediussi/ubuntu-with-tools:$tag"
+          
+              # set --provenance=false to force pushing a docker manifest (not oci)
+              # https://github.com/docker/buildx/issues/1509#issuecomment-1378454396
+              docker buildx build . \
+              --platform linux/amd64,linux/arm64 \
+              --build-arg "UBUNTU_VERSION=$tag" \
+              --tag "mediussi/ubuntu-with-tools:$tag" \
+              --provenance=false \
+              --push
+          done
