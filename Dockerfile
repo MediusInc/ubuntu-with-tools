@@ -1,0 +1,186 @@
+ARG UBUNTU_VERSION=""
+
+# renovate: datasource=github-releases depName=openshift/okd versioning=loose
+ARG OC_RELEASE="4.22.0-okd-scos.10"
+# renovate: datasource=github-releases depName=helm/helm versioning=semver
+ARG HELM_RELEASE="v4.3.1"
+# renovate: datasource=github-releases depName=jkroepke/helm-secrets versioning=semver extractVersion=^v(?<version>.+)$
+ARG HELM_SECRETS_RELEASE="4.7.10"
+# renovate: datasource=github-releases depName=getsops/sops versioning=semver
+ARG SOPS_RELEASE="v3.13.3"
+# renovate: datasource=github-releases depName=mikefarah/yq versioning=semver
+ARG YQ_RELEASE="v4.54.3"
+# renovate: datasource=github-releases depName=google/go-containerregistry versioning=semver
+ARG CRANE_RELEASE="v0.22.1"
+# renovate: datasource=github-releases depName=casey/just versioning=semver
+ARG JUST_RELEASE="1.59.0"
+# renovate: datasource=github-releases depName=telepresenceio/telepresence versioning=semver
+ARG TELEPRESENCE_RELEASE="v2.33.0"
+# renovate: datasource=github-releases depName=argoproj/argo-cd versioning=semver
+ARG ARGO_CD_RELEASE="v3.6.1"
+# renovate: datasource=gitlab-releases depName=gitlab-org/cli versioning=semver extractVersion=^v(?<version>.+)$
+ARG GLAB_RELEASE="1.130.0"
+
+#     _    ____  __  __
+#    / \  |  _ \|  \/  |
+#   / _ \ | |_) | |\/| |
+#  / ___ \|  _ <| |  | |
+# /_/   \_\_| \_\_|  |_|
+
+FROM --platform=arm64 ubuntu${UBUNTU_VERSION:+":$UBUNTU_VERSION"} AS base-arm64
+ARG OC_RELEASE
+ARG HELM_RELEASE
+ARG SOPS_RELEASE
+ARG YQ_RELEASE
+ARG CRANE_RELEASE
+ARG JUST_RELEASE
+ARG TELEPRESENCE_RELEASE
+ARG ARGO_CD_RELEASE
+ARG GLAB_RELEASE
+
+ENV HELM_URL=https://get.helm.sh/helm-${HELM_RELEASE}-linux-arm64.tar.gz
+ENV OC_URL=https://github.com/openshift/okd/releases/download/${OC_RELEASE}/openshift-client-linux-arm64-${OC_RELEASE}.tar.gz
+ENV YQ_URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_linux_arm64.tar.gz
+ENV CRANE_URL=https://github.com/google/go-containerregistry/releases/download/${CRANE_RELEASE}/go-containerregistry_Linux_arm64.tar.gz
+ENV SOPS_URL=https://github.com/getsops/sops/releases/download/${SOPS_RELEASE}/sops-${SOPS_RELEASE}.linux.arm64
+ENV JUST_URL=https://github.com/casey/just/releases/download/${JUST_RELEASE}/just-${JUST_RELEASE}-aarch64-unknown-linux-musl.tar.gz
+ENV TELEPRESENCE_URL=https://github.com/telepresenceio/telepresence/releases/download/${TELEPRESENCE_RELEASE}/telepresence-linux-arm64
+ENV ARGO_CD_URL=https://github.com/argoproj/argo-cd/releases/download/${ARGO_CD_RELEASE}/argocd-linux-arm64
+ENV GLAB_URL=https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_RELEASE}/downloads/glab_${GLAB_RELEASE}_linux_arm64.tar.gz
+
+#     _    __  __ ____
+#    / \  |  \/  |  _ \
+#   / _ \ | |\/| | | | |
+#  / ___ \| |  | | |_| |
+# /_/   \_\_|  |_|____/
+
+FROM --platform=amd64 ubuntu${UBUNTU_VERSION:+":$UBUNTU_VERSION"} AS base-amd64
+ARG OC_RELEASE
+ARG HELM_RELEASE
+ARG SOPS_RELEASE
+ARG YQ_RELEASE
+ARG CRANE_RELEASE
+ARG JUST_RELEASE
+ARG TELEPRESENCE_RELEASE
+ARG ARGO_CD_RELEASE
+ARG GLAB_RELEASE
+
+ENV HELM_URL=https://get.helm.sh/helm-${HELM_RELEASE}-linux-amd64.tar.gz
+ENV OC_URL=https://github.com/openshift/okd/releases/download/${OC_RELEASE}/openshift-client-linux-${OC_RELEASE}.tar.gz
+ENV YQ_URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_linux_amd64.tar.gz
+ENV CRANE_URL=https://github.com/google/go-containerregistry/releases/download/${CRANE_RELEASE}/go-containerregistry_Linux_x86_64.tar.gz
+ENV SOPS_URL=https://github.com/getsops/sops/releases/download/${SOPS_RELEASE}/sops-${SOPS_RELEASE}.linux.amd64
+ENV JUST_URL=https://github.com/casey/just/releases/download/${JUST_RELEASE}/just-${JUST_RELEASE}-x86_64-unknown-linux-musl.tar.gz
+ENV TELEPRESENCE_URL=https://github.com/telepresenceio/telepresence/releases/download/${TELEPRESENCE_RELEASE}/telepresence-linux-amd64
+ENV ARGO_CD_URL=https://github.com/argoproj/argo-cd/releases/download/${ARGO_CD_RELEASE}/argocd-linux-amd64
+ENV GLAB_URL=https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_RELEASE}/downloads/glab_${GLAB_RELEASE}_linux_amd64.tar.gz
+
+#  ____   _____        ___   _ _     ___    _    ____
+# |  _ \ / _ \ \      / / \ | | |   / _ \  / \  |  _ \
+# | | | | | | \ \ /\ / /|  \| | |  | | | |/ _ \ | | | |
+# | |_| | |_| |\ V  V / | |\  | |__| |_| / ___ \| |_| |
+# |____/ \___/  \_/\_/  |_| \_|_____\___/_/   \_\____/
+
+FROM base-${TARGETARCH} AS download-oc
+# oc & kubectl
+ADD ${OC_URL} /tmp/oc.tar.gz
+RUN tar xzf /tmp/oc.tar.gz -C /tmp
+
+FROM base-${TARGETARCH} AS download-helm
+# helm
+ADD ${HELM_URL} /tmp/helm.tar.gz
+# helm is wrapped in 1 folder inside the tar => use --strip-components=1
+RUN tar xzf /tmp/helm.tar.gz -C /tmp --strip-components=1
+
+FROM base-${TARGETARCH} AS download-yq
+# yq
+ADD ${YQ_URL} /tmp/yq.tar.gz
+RUN tar xzf /tmp/yq.tar.gz -C /tmp
+
+FROM base-${TARGETARCH} AS download-crane
+# crane
+ADD ${CRANE_URL} /tmp/crane.tar.gz
+RUN tar xzf /tmp/crane.tar.gz -C /tmp
+
+FROM base-${TARGETARCH} AS download-sops
+# sops
+ADD ${SOPS_URL} /tmp/sops
+RUN chmod +x /tmp/sops
+
+FROM base-${TARGETARCH} AS download-just
+# just
+ADD ${JUST_URL} /tmp/just.tar.gz
+RUN tar xzf /tmp/just.tar.gz -C /tmp
+
+FROM base-${TARGETARCH} AS download-telepresence
+# telepresence
+ADD ${TELEPRESENCE_URL} /tmp/telepresence
+RUN chmod +x /tmp/telepresence
+
+FROM base-${TARGETARCH} AS download-argocd
+# argocd
+ADD ${ARGO_CD_URL} /tmp/argocd
+RUN chmod +x /tmp/argocd
+
+FROM base-${TARGETARCH} AS download-glab
+# glab
+ADD ${GLAB_URL} /tmp/glab.tar.gz
+RUN tar xzf /tmp/glab.tar.gz -C /tmp
+
+#  _____ ___ _   _    _    _
+# |  ___|_ _| \ | |  / \  | |
+# | |_   | ||  \| | / _ \ | |
+# |  _|  | || |\  |/ ___ \| |___
+# |_|   |___|_| \_/_/   \_\_____|
+
+FROM base-${TARGETARCH}
+ARG TARGETARCH
+LABEL org.opencontainers.image.authors="Rok Koleša <rok.kolesa@medius.si>"
+LABEL org.opencontainers.image.source="https://github.com/MediusInc/ubuntu-with-tools"
+
+COPY --from=download-oc /tmp/kubectl /tmp/oc /usr/local/bin/
+COPY --from=download-helm /tmp/helm /usr/local/bin/
+COPY --from=download-yq /tmp/yq_linux_${TARGETARCH} /usr/local/bin/yq
+COPY --from=download-crane /tmp/crane /usr/local/bin/
+COPY --from=download-sops /tmp/sops /usr/local/bin/
+COPY --from=download-just /tmp/just /usr/local/bin/
+COPY --from=download-telepresence /tmp/telepresence /usr/local/bin/telepresence
+COPY --from=download-argocd /tmp/argocd /usr/local/bin/argocd
+COPY --from=download-glab /tmp/bin/glab /usr/local/bin/glab
+ADD gpg/helm-secrets.gpg /tmp/gpg/.gnupg/helm-secrets.gpg
+
+ARG HELM_SECRETS_RELEASE
+ARG DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y \
+    ca-certificates \
+    findutils \
+    jq \
+    git \
+    wget \
+    zip \
+    unzip \
+    xz-utils \
+    gettext-base \
+    jsonnet \
+    git-lfs \
+    xmlstarlet \
+    podman \
+    fuse-overlayfs \
+    crun \
+    rsync \
+    skopeo \
+    httpie \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && helm plugin install oci://ghcr.io/jkroepke/helm-secrets/secrets:$HELM_SECRETS_RELEASE --keyring /tmp/gpg/.gnupg/helm-secrets.gpg \
+  && helm plugin install oci://ghcr.io/jkroepke/helm-secrets/secrets-getter:$HELM_SECRETS_RELEASE --keyring /tmp/gpg/.gnupg/helm-secrets.gpg \
+  && helm plugin install oci://ghcr.io/jkroepke/helm-secrets/secrets-post-renderer:$HELM_SECRETS_RELEASE --keyring /tmp/gpg/.gnupg/helm-secrets.gpg
+# disable httpie version check
+RUN mkdir -p ~/.config/httpie \
+    && jq -n '{ disable_update_warnings: true }' > ~/.config/httpie/config.json
+
+# podman configuration.. this + podman + fuse-overlayfs + crun is required to make podman builds work
+ADD containers.conf /etc/containers/containers.conf
