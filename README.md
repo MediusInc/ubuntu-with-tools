@@ -14,6 +14,7 @@ docker pull mediussi/ubuntu-with-tools:26.04
 ```
 
 Installed tools:
+- curl
 - wget
 - git
 - zip

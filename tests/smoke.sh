@@ -2,7 +2,7 @@
 # Smoke test: run inside the image (privileged, for the podman build check).
 set -euxo pipefail
 
-for tool in wget git zip unzip xz jq yq envsubst jsonnet kubectl oc crane which git-lfs \
+for tool in curl msgfmt xgettext msgmerge wget git zip unzip xz jq yq envsubst jsonnet kubectl oc crane which git-lfs \
             helm xmlstarlet podman just rsync http telepresence argocd skopeo sops glab; do
   command -v "$tool"
 done

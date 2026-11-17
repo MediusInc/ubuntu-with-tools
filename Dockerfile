@@ -156,6 +156,7 @@ RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y \
     ca-certificates \
+    curl \
     findutils \
     jq \
     git \
@@ -163,7 +164,7 @@ RUN apt-get update \
     zip \
     unzip \
     xz-utils \
-    gettext-base \
+    gettext \
     jsonnet \
     git-lfs \
     xmlstarlet \
