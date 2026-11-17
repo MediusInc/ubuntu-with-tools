@@ -49,7 +49,12 @@ by Renovate. `yq`, `just` and `glab` are downloaded even though Ubuntu packages
 them: apt's `yq` is a different tool (the Python jq wrapper), and apt's `just`
 and `glab` are much older.
 
-## Testing locally
+## Testing
+
+CI builds each platform (amd64, and arm64 via QEMU) and runs `tests/smoke.sh` in it
+before pushing; a failing smoke test blocks the push.
+
+To run it locally:
 
 ```bash
 docker buildx build . --load --build-arg UBUNTU_VERSION=26.04 -t ubuntu-with-tools:test
