@@ -51,8 +51,8 @@ and `glab` are much older.
 
 ## Testing
 
-CI builds each platform (amd64, and arm64 via QEMU) and runs `tests/smoke.sh` in it
-before pushing; a failing smoke test blocks the push.
+CI builds each platform on a native runner (amd64 and arm64) and runs `tests/smoke.sh`
+in it; the multi-arch tag is only pushed when both platforms pass.
 
 To run it locally:
 
