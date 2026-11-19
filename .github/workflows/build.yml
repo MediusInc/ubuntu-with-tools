@@ -14,6 +14,8 @@ on:
 
 env:
   IMAGE: mediussi/ubuntu-with-tools
+  # Newest LTS in the matrix; its image is also tagged `latest`
+  LATEST_UBUNTU: "26.04"
 
 jobs:
   # Build and smoke test each platform on a native runner (no QEMU: crun cannot
@@ -24,7 +26,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        # Ubuntu LTS versions only; add new LTS releases here
+        # Ubuntu LTS versions only; add new LTS releases here (and update LATEST_UBUNTU)
         ubuntu: [ "26.04" ]
         platform:
           - { arch: amd64, runner: ubuntu-latest }
@@ -108,8 +110,12 @@ jobs:
         working-directory: digests
         run: |
           test "$(ls | wc -l)" -eq 2
+          tags=(--tag "${IMAGE}:${{ matrix.ubuntu }}")
+          if [ "${{ matrix.ubuntu }}" = "${LATEST_UBUNTU}" ]; then
+            tags+=(--tag "${IMAGE}:latest")
+          fi
           docker buildx imagetools create \
-            --tag "${IMAGE}:${{ matrix.ubuntu }}" \
+            "${tags[@]}" \
             $(printf "${IMAGE}@sha256:%s " *)
 
       - name: Inspect

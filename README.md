@@ -11,6 +11,8 @@ https://hub.docker.com/r/mediussi/ubuntu-with-tools/tags):
 
 ```bash
 docker pull mediussi/ubuntu-with-tools:26.04
+# or the newest LTS:
+docker pull mediussi/ubuntu-with-tools:latest
 ```
 
 Installed tools:
